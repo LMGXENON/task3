@@ -2,93 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>After School Lessons</title>
+    <title>Lesson Booking</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
 
     <div id="app">
-        <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px;">
-            <h1>{{ sitename }}</h1>
-            <!-- Fixed: Button is only disabled when on the lessons page AND cart is empty -->
-            <button v-on:click="showCheckout = !showCheckout" :disabled="!showCheckout && cart.length === 0" style="padding: 10px 15px; cursor: pointer;">
-                {{ showCheckout ? 'View Lessons' : '🛒 Cart (' + cart.length + ')' }}
+        <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">
+            <h1>{{ siteTitle }}</h1>
+            <button v-on:click="toggleCart" :disabled="!showCart && cart.length === 0">
+                {{ showCart ? 'View Lessons' : 'Cart (' + cart.length + ')' }}
             </button>
         </header>
 
         <main>
-            <!-- LESSONS PAGE (Task 3.3) -->
-            <div v-if="!showCheckout">
-                <h2>Available Lessons</h2>
-                <div v-for="lesson in lessons" :key="lesson.id" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
-                    <p><strong>ID:</strong> {{ lesson.id }}</p>
-                    <p><strong>Subject:</strong> {{ lesson.subject }}</p>
-                    <p><strong>Location:</strong> {{ lesson.location }}</p>
-                    <p><strong>Price:</strong> £{{ lesson.price }}</p>
-                    <p><strong>Spaces Available:</strong> {{ lesson.spaces }}</p>
-
-                    <!-- Add to Cart button using canAddToCart method -->
-                    <button v-on:click="addToCart(lesson)" :disabled="!canAddToCart(lesson)">
-                        Add to Cart
-                    </button>
-                    <span v-if="!canAddToCart(lesson)" style="color: red; margin-left: 10px;">All spaces taken!</span>
+            <div v-if="!showCart">
+                <h2>Lessons</h2>
+                <div v-for="lesson in lessons" :key="lesson.id" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
+                    <p>ID: {{ lesson.id }}</p>
+                    <p>Subject: {{ lesson.subject }}</p>
+                    <p>Location: {{ lesson.location }}</p>
+                    <p>Price: £{{ lesson.price }}</p>
+                    <p>Spaces: {{ lesson.spaces }}</p>
+                    <button v-on:click="addToCart(lesson)" :disabled="!canAddToCart(lesson)">Add to Cart</button>
+                    <span v-if="!canAddToCart(lesson)" style="color: red; margin-left: 10px;">Sold out</span>
                 </div>
             </div>
 
-            <!-- CHECKOUT & CART PAGE (Tasks 3.4 & 3.5) -->
             <div v-else>
-                <h2>Shopping Cart & Checkout</h2>
+                <h2>Shopping Cart</h2>
 
-                <!-- Order Confirmation Message -->
-                <div v-if="orderSubmitted" style="background-color: #e6ffed; border: 1px solid #b7eb8b; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
-                    <p style="color: green; font-weight: bold; margin: 0;">
-                        Success! Your order has been confirmed. Thank you, {{ order.name }}!
-                    </p>
+                <div v-if="submitted" style="color: green; margin-bottom: 15px;">
+                    <p>Order submitted successfully!</p>
                 </div>
 
-                <div v-if="cart.length === 0 && !orderSubmitted">
-                    <p>Your shopping cart is currently empty.</p>
+                <div v-if="cart.length === 0 && !submitted">
+                    <p>Cart is empty.</p>
                 </div>
 
                 <div v-if="cart.length > 0">
-                    <h3>Cart Summary</h3>
                     <ul>
-                        <!-- Display each lesson in the cart with quantity using v-for and v-if -->
                         <template v-for="lesson in lessons" :key="lesson.id">
-                            <li v-if="cartCount(lesson.id) > 0" style="margin-bottom: 10px;">
-                                <strong>{{ lesson.subject }}</strong> - {{ lesson.location }} | 
-                                Quantity: {{ cartCount(lesson.id) }} | 
-                                Price: £{{ lesson.price * cartCount(lesson.id) }}
-                                <button v-on:click="removeFromCart(lesson)" style="margin-left: 10px; background-color: #ffcccc; border: 1px solid #cc0000; cursor: pointer;">
-                                    Remove 1
-                                </button>
+                            <li v-if="cartCount(lesson.id) > 0" style="margin-bottom: 8px;">
+                                {{ lesson.subject }} - {{ lesson.location }} | Quantity: {{ cartCount(lesson.id) }} | Price: £{{ lesson.price * cartCount(lesson.id) }}
+                                <button v-on:click="removeFromCart(lesson)" style="margin-left: 10px;">Remove</button>
                             </li>
                         </template>
                     </ul>
 
                     <hr style="margin: 20px 0;">
 
-                    <h3>Customer Details</h3>
+                    <h3>Checkout</h3>
                     <p>
-                        <strong>Name (Letters only):</strong><br>
-                        <input v-model.trim="order.name" placeholder="Enter your name">
+                        Name: <input v-model.trim="order.name" placeholder="Name">
                     </p>
                     <p>
-                        <strong>Phone (Numbers only):</strong><br>
-                        <input v-model.trim="order.phone" placeholder="Enter your phone number">
+                        Phone: <input v-model.trim="order.phone" placeholder="Phone">
                     </p>
-
-                    <!-- Checkout Button -->
-                    <button v-on:click="submitOrder" :disabled="!canCheckout" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">
-                        Checkout Order
-                    </button>
+                    <button v-on:click="checkout" :disabled="!isFormValid">Checkout</button>
                 </div>
 
-                <p style="margin-top: 30px;">
-                    <button v-on:click="showCheckout = false" style="padding: 8px 15px; cursor: pointer;">
-                        ← Back to Lessons
-                    </button>
+                <p style="margin-top: 20px;">
+                    <button v-on:click="toggleCart">Back</button>
                 </p>
             </div>
         </main>
@@ -96,22 +71,22 @@
 
     <script type="module">
         const { createApp } = Vue
-        const myApp = createApp({
+        createApp({
             data() {
                 return {
-                    sitename: "After School Club Booking",
-                    showCheckout: false,
+                    siteTitle: 'Lesson Booking',
+                    showCart: false,
                     lessons: [
-                        { id: 1001, subject: "Math", location: "London", price: 100, spaces: 5 },
-                        { id: 1002, subject: "English", location: "Oxford", price: 90, spaces: 5 },
-                        { id: 1003, subject: "Science", location: "Cambridge", price: 120, spaces: 5 }
+                        { id: 1001, subject: 'Math', location: 'London', price: 100, spaces: 5 },
+                        { id: 1002, subject: 'English', location: 'Oxford', price: 90, spaces: 5 },
+                        { id: 1003, subject: 'Science', location: 'Cambridge', price: 120, spaces: 5 }
                     ],
-                    cart: [], // Stores IDs of added lessons
+                    cart: [],
                     order: {
-                        name: "",
-                        phone: ""
+                        name: '',
+                        phone: ''
                     },
-                    orderSubmitted: false
+                    submitted: false
                 }
             },
             methods: {
@@ -122,8 +97,11 @@
                     if (this.canAddToCart(lesson)) {
                         this.cart.push(lesson.id);
                         lesson.spaces--;
-                        this.orderSubmitted = false;
+                        this.submitted = false;
                     }
+                },
+                toggleCart() {
+                    this.showCart = !this.showCart;
                 },
                 cartCount(id) {
                     let count = 0;
@@ -141,23 +119,21 @@
                         lesson.spaces++;
                     }
                 },
-                submitOrder() {
-                    if (this.canCheckout) {
-                        this.orderSubmitted = true;
-                        this.cart = []; // Empty the cart
+                checkout() {
+                    if (this.isFormValid) {
+                        this.submitted = true;
+                        this.cart = [];
                     }
                 }
             },
             computed: {
-                canCheckout() {
-                    const nameValid = /^[A-Za-z\s]+$/.test(this.order.name);
-                    const phoneValid = /^[0-9]+$/.test(this.order.phone);
-                    return nameValid && phoneValid;
+                isFormValid() {
+                    const nameCheck = /^[A-Za-z\s]+$/.test(this.order.name);
+                    const phoneCheck = /^[0-9]+$/.test(this.order.phone);
+                    return nameCheck && phoneCheck;
                 }
             }
-        })
-        myApp.mount('#app')
+        }).mount('#app')
     </script>
-    
 </body>
 </html>
