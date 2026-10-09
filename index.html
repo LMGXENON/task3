@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>After School Lesson Booking</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+
+    <div id="app">
+        <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px;">
+            <h1>{{ sitename }}</h1>
+            <!-- Cart/Checkout toggle button, enabled only when cart has items -->
+            <button v-on:click="toggleCartPage" :disabled="cart.length === 0" style="padding: 10px 15px; cursor: pointer;">
+                🛒 Cart ({{ cart.length }})
+            </button>
+        </header>
+
+        <main>
+            <!-- LESSONS PAGE (Task 3.3) -->
+            <div v-if="showProduct">
+                <h2>Available Lessons</h2>
+                <div v-for="lesson in lessons" :key="lesson.id" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
+                    <p><strong>ID:</strong> {{ lesson.id }}</p>
+                    <p><strong>Subject:</strong> {{ lesson.subject }}</p>
+                    <p><strong>Location:</strong> {{ lesson.location }}</p>
+                    <p><strong>Price:</strong> £{{ lesson.price }}</p>
+                    <p><strong>Spaces Available:</strong> {{ lesson.spaces }}</p>
+
+                    <!-- Add to Cart button using canAddToCart method -->
+                    <button v-on:click="addToCart(lesson)" :disabled="!canAddToCart(lesson)">
+                        Add to Cart
+                    </button>
+                    <span v-if="!canAddToCart(lesson)" style="color: red; margin-left: 10px;">All spaces taken!</span>
+                </div>
+            </div>
+
+            <!-- CHECKOUT & CART PAGE (Tasks 3.4 & 3.5) -->
+            <div v-else>
+                <h2>Shopping Cart & Checkout</h2>
+                
+                <div v-if="cart.length === 0">
+                    <p>Your shopping cart is currently empty.</p>
+                </div>
+
+                <div v-else>
+                    <h3>Cart Summary</h3>
+                    <ul>
+                        <!-- Display each lesson in the cart with quantity using v-for and v-if -->
+                        <template v-for="lesson in lessons" :key="lesson.id">
+                            <li v-if="cartCount(lesson.id) > 0" style="margin-bottom: 10px;">
+                                <strong>{{ lesson.subject }}</strong> - {{ lesson.location }} | 
+                                Quantity: {{ cartCount(lesson.id) }} | 
+                                Price: £{{ lesson.price * cartCount(lesson.id) }}
+                                <button v-on:click="removeFromCart(lesson)" style="margin-left: 10px; background-color: #ffcccc; border: 1px solid #cc0000; cursor: pointer;">
+                                    Remove 1
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+
+                    <hr style="margin: 20px 0;">
+
+                    <h3>Customer Details</h3>
+                    <p>
+                        <strong>Name:</strong> 
+                        <input v-model.trim="order.name" placeholder="Enter your name">
+                    </p>
+                    <p>
+                        <strong>Phone:</strong> 
+                        <input v-model.trim="order.phone" placeholder="Enter your phone number">
+                    </p>
+
+                    <!-- Checkout Button: enabled only when name and phone are filled -->
+                    <button v-on:click="submitOrder" :disabled="!canCheckout" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">
+                        Checkout Order
+                    </button>
+
+                    <!-- Order Confirmation Message -->
+                    <p v-if="orderSubmitted" style="color: green; font-weight: bold; margin-top: 15px;">
+                        Success! Your order has been confirmed.
+                    </p>
+                </div>
+
+                <p style="margin-top: 30px;">
+                    <button v-on:click="toggleCartPage" style="padding: 8px 15px; cursor: pointer;">
+                        ← Back to Lessons
+                    </button>
+                </p>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        const { createApp } = Vue
+        const myApp = createApp({
+            data() {
+                return {
+                    sitename: "After School Club Booking",
+                    showProduct: true, // Controls switching between Lesson Page and Cart Page
+                    lessons: [
+                        { id: 1001, subject: "Math", location: "London", price: 100, spaces: 5 },
+                        { id: 1002, subject: "English", location: "Oxford", price: 90, spaces: 5 },
+                        { id: 1003, subject: "Science", location: "Cambridge", price: 120, spaces: 5 }
+                    ],
+                    cart: [], // Stores IDs of added lessons
+                    order: {
+                        name: "",
+                        phone: ""
+                    },
+                    orderSubmitted: false
+                }
+            },
+            methods: {
+                // Task 3.3: Check if lesson has available space
+                canAddToCart(lesson) {
+                    return lesson.spaces > 0;
+                },
+                // Task 3.3: Add lesson id to cart and decrement space
+                addToCart(lesson) {
+                    if (this.canAddToCart(lesson)) {
+                        this.cart.push(lesson.id);
+                        lesson.spaces--;
+                        this.orderSubmitted = false;
+                    }
+                },
+                // Toggle between lesson list view and cart/checkout view
+                toggleCartPage() {
+                    this.showProduct = !this.showProduct;
+                },
+                // Task 3.5: Compute number of copies of a lesson ID in the cart array
+                cartCount(id) {
+                    let count = 0;
+                    for (let i = 0; i < this.cart.length; i++) {
+                        if (this.cart[i] === id) {
+                            count++;
+                        }
+                    }
+                    return count;
+                },
+                // Task 3.5: Remove one copy of the lesson from cart and restore its space
+                removeFromCart(lesson) {
+                    const index = this.cart.indexOf(lesson.id);
+                    if (index > -1) {
+                        this.cart.splice(index, 1);
+                        lesson.spaces++;
+                    }
+                },
+                // Task 3.4: Handle checkout action
+                submitOrder() {
+                    if (this.canCheckout) {
+                        this.orderSubmitted = true;
+                        this.cart = []; // Empty the cart upon confirmation
+                    }
+                }
+            },
+            computed: {
+                // Task 3.4: Validate that name and phone fields are non-empty
+                canCheckout() {
+                    return this.order.name.trim() !== "" && this.order.phone.trim() !== "";
+                }
+            }
+        })
+        myApp.mount('#app')
+    </script>
+    
+</body>
+</html>
