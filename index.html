@@ -11,8 +11,8 @@
     <div id="app">
         <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px;">
             <h1>{{ sitename }}</h1>
-            <!-- Cart toggle button, enabled only when items are in the cart -->
-            <button v-on:click="showCheckout = !showCheckout" :disabled="cart.length === 0" style="padding: 10px 15px; cursor: pointer;">
+            <!-- Fixed: Button is only disabled when on the lessons page AND cart is empty -->
+            <button v-on:click="showCheckout = !showCheckout" :disabled="!showCheckout && cart.length === 0" style="padding: 10px 15px; cursor: pointer;">
                 {{ showCheckout ? 'View Lessons' : '🛒 Cart (' + cart.length + ')' }}
             </button>
         </header>
@@ -115,11 +115,9 @@
                 }
             },
             methods: {
-                // Task 3.3: Check if lesson has available space
                 canAddToCart(lesson) {
                     return lesson.spaces > 0;
                 },
-                // Task 3.3: Add lesson id to cart and decrement space
                 addToCart(lesson) {
                     if (this.canAddToCart(lesson)) {
                         this.cart.push(lesson.id);
@@ -127,7 +125,6 @@
                         this.orderSubmitted = false;
                     }
                 },
-                // Task 3.5: Compute number of copies of a lesson ID in the cart array
                 cartCount(id) {
                     let count = 0;
                     for (let i = 0; i < this.cart.length; i++) {
@@ -137,7 +134,6 @@
                     }
                     return count;
                 },
-                // Task 3.5: Remove one copy of the lesson from cart and restore its space
                 removeFromCart(lesson) {
                     const index = this.cart.indexOf(lesson.id);
                     if (index > -1) {
@@ -145,7 +141,6 @@
                         lesson.spaces++;
                     }
                 },
-                // Task 3.4: Handle checkout action
                 submitOrder() {
                     if (this.canCheckout) {
                         this.orderSubmitted = true;
@@ -154,7 +149,6 @@
                 }
             },
             computed: {
-                // Task 3.4: Validate that Name contains only letters and Phone contains only numbers
                 canCheckout() {
                     const nameValid = /^[A-Za-z\s]+$/.test(this.order.name);
                     const phoneValid = /^[0-9]+$/.test(this.order.phone);
