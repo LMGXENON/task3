@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>After School Lesson Booking</title>
+    <title>After School Lessons</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
@@ -11,15 +11,15 @@
     <div id="app">
         <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px;">
             <h1>{{ sitename }}</h1>
-            <!-- Cart/Checkout toggle button, enabled only when cart has items -->
-            <button v-on:click="toggleCartPage" :disabled="cart.length === 0" style="padding: 10px 15px; cursor: pointer;">
-                🛒 Cart ({{ cart.length }})
+            <!-- Cart toggle button, enabled only when items are in the cart -->
+            <button v-on:click="showCheckout = !showCheckout" :disabled="cart.length === 0" style="padding: 10px 15px; cursor: pointer;">
+                {{ showCheckout ? 'View Lessons' : '🛒 Cart (' + cart.length + ')' }}
             </button>
         </header>
 
         <main>
             <!-- LESSONS PAGE (Task 3.3) -->
-            <div v-if="showProduct">
+            <div v-if="!showCheckout">
                 <h2>Available Lessons</h2>
                 <div v-for="lesson in lessons" :key="lesson.id" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
                     <p><strong>ID:</strong> {{ lesson.id }}</p>
@@ -39,12 +39,19 @@
             <!-- CHECKOUT & CART PAGE (Tasks 3.4 & 3.5) -->
             <div v-else>
                 <h2>Shopping Cart & Checkout</h2>
-                
-                <div v-if="cart.length === 0">
+
+                <!-- Order Confirmation Message -->
+                <div v-if="orderSubmitted" style="background-color: #e6ffed; border: 1px solid #b7eb8b; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+                    <p style="color: green; font-weight: bold; margin: 0;">
+                        Success! Your order has been confirmed. Thank you, {{ order.name }}!
+                    </p>
+                </div>
+
+                <div v-if="cart.length === 0 && !orderSubmitted">
                     <p>Your shopping cart is currently empty.</p>
                 </div>
 
-                <div v-else>
+                <div v-if="cart.length > 0">
                     <h3>Cart Summary</h3>
                     <ul>
                         <!-- Display each lesson in the cart with quantity using v-for and v-if -->
@@ -64,27 +71,22 @@
 
                     <h3>Customer Details</h3>
                     <p>
-                        <strong>Name:</strong> 
+                        <strong>Name (Letters only):</strong><br>
                         <input v-model.trim="order.name" placeholder="Enter your name">
                     </p>
                     <p>
-                        <strong>Phone:</strong> 
+                        <strong>Phone (Numbers only):</strong><br>
                         <input v-model.trim="order.phone" placeholder="Enter your phone number">
                     </p>
 
-                    <!-- Checkout Button: enabled only when name and phone are filled -->
+                    <!-- Checkout Button -->
                     <button v-on:click="submitOrder" :disabled="!canCheckout" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">
                         Checkout Order
                     </button>
-
-                    <!-- Order Confirmation Message -->
-                    <p v-if="orderSubmitted" style="color: green; font-weight: bold; margin-top: 15px;">
-                        Success! Your order has been confirmed.
-                    </p>
                 </div>
 
                 <p style="margin-top: 30px;">
-                    <button v-on:click="toggleCartPage" style="padding: 8px 15px; cursor: pointer;">
+                    <button v-on:click="showCheckout = false" style="padding: 8px 15px; cursor: pointer;">
                         ← Back to Lessons
                     </button>
                 </p>
@@ -98,7 +100,7 @@
             data() {
                 return {
                     sitename: "After School Club Booking",
-                    showProduct: true, // Controls switching between Lesson Page and Cart Page
+                    showCheckout: false,
                     lessons: [
                         { id: 1001, subject: "Math", location: "London", price: 100, spaces: 5 },
                         { id: 1002, subject: "English", location: "Oxford", price: 90, spaces: 5 },
@@ -125,10 +127,6 @@
                         this.orderSubmitted = false;
                     }
                 },
-                // Toggle between lesson list view and cart/checkout view
-                toggleCartPage() {
-                    this.showProduct = !this.showProduct;
-                },
                 // Task 3.5: Compute number of copies of a lesson ID in the cart array
                 cartCount(id) {
                     let count = 0;
@@ -151,14 +149,16 @@
                 submitOrder() {
                     if (this.canCheckout) {
                         this.orderSubmitted = true;
-                        this.cart = []; // Empty the cart upon confirmation
+                        this.cart = []; // Empty the cart
                     }
                 }
             },
             computed: {
-                // Task 3.4: Validate that name and phone fields are non-empty
+                // Task 3.4: Validate that Name contains only letters and Phone contains only numbers
                 canCheckout() {
-                    return this.order.name.trim() !== "" && this.order.phone.trim() !== "";
+                    const nameValid = /^[A-Za-z\s]+$/.test(this.order.name);
+                    const phoneValid = /^[0-9]+$/.test(this.order.phone);
+                    return nameValid && phoneValid;
                 }
             }
         })
